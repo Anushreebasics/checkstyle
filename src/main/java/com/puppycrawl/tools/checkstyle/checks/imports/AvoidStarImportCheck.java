@@ -85,15 +85,11 @@ public class AvoidStarImportCheck
      */
     private boolean allowStaticMemberImports;
 
-    /**
-     * Maximum number of allowed star imports.
-     */
-    private int maxAllowedStarImports;
+    /** Maximum number of wildcard imports that can be used in a file. */
+    private int maxAllowed;
 
-    /**
-     * Counter for used star imports.
-     */
-    private int currentStarImportsCount;
+    /** Number of wildcard imports encountered in a file. */
+    private int starImportCount;
 
     @Override
     public int[] getDefaultTokens() {
@@ -117,6 +113,11 @@ public class AvoidStarImportCheck
         //      <property name="allowStaticMemberImports" value="false"/>
         //   </module>
         return new int[] {TokenTypes.IMPORT, TokenTypes.STATIC_IMPORT};
+    }
+
+    @Override
+    public void beginTree(DetailAST rootAST) {
+        starImportCount = 0;
     }
 
     /**
@@ -161,29 +162,22 @@ public class AvoidStarImportCheck
     }
 
     /**
-     * Setter to control how many star imports are allowed.
+     * Setter to control maximum number of wildcard imports allowed in a file.
      *
-     * @param count the number of star imports allowed
-     * @since 13.5.0
+     * @param maxAllowedParam maximum number of wildcard imports allowed in a file
+     * @since 12.2.0
      */
-    public void setMaxAllowedStarImports(int count) {
-        maxAllowedStarImports = count;
-    }
-
-    @Override
-    public void beginTree(DetailAST rootAST) {
-        currentStarImportsCount = 0;
+    public void setMaxAllowed(int maxAllowedParam) {
+        maxAllowed = maxAllowedParam;
     }
 
     @Override
     public void visitToken(final DetailAST ast) {
-        if (ast.getType() == TokenTypes.IMPORT) {
-            if (!allowClassImports) {
-                final DetailAST startingDot = ast.getFirstChild();
-                logsStarredImportViolation(startingDot);
-            }
+        if (!allowClassImports && ast.getType() == TokenTypes.IMPORT) {
+            final DetailAST startingDot = ast.getFirstChild();
+            logsStarredImportViolation(startingDot);
         }
-        else if (!allowStaticMemberImports) {
+        else if (!allowStaticMemberImports && ast.getType() == TokenTypes.STATIC_IMPORT) {
             // must navigate past the static keyword
             final DetailAST startingDot = ast.getFirstChild().getNextSibling();
             logsStarredImportViolation(startingDot);
@@ -200,16 +194,11 @@ public class AvoidStarImportCheck
         final FullIdent name = FullIdent.createFullIdent(startingDot);
         final String importText = name.getText();
         final boolean isStarImport = importText.endsWith(STAR_IMPORT_SUFFIX);
-        if (isStarImport) {
-            currentStarImportsCount++;
-            if (currentStarImportsCount > maxAllowedStarImports
-                    && !excludes.contains(importText)) {
-                if (maxAllowedStarImports > 0) {
-                    log(startingDot, MSG_COUNT, maxAllowedStarImports);
-                }
-                else {
-                    log(startingDot, MSG_KEY, importText);
-                }
+        final boolean isExcluded = excludes.contains(importText);
+        if (isStarImport && !isExcluded) {
+            starImportCount++;
+            if (starImportCount > maxAllowed) {
+                log(startingDot, MSG_KEY, importText);
             }
         }
     }

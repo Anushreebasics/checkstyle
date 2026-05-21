@@ -34,6 +34,9 @@
             <property default-value="0" name="maxAllowedStarImports" type="int">
                <description>Control how many star imports are allowed.</description>
             </property>
+            <property default-value="0" name="maxAllowed" type="int">
+               <description>Control maximum number of wildcard imports allowed in a file.</description>
+            </property>
          </properties>
          <message-keys>
             <message-key key="import.avoidStar"/>
