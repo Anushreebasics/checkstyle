@@ -197,8 +197,11 @@ public class AvoidStarImportCheck
         final boolean isExcluded = excludes.contains(importText);
         if (isStarImport && !isExcluded) {
             starImportCount++;
-            if (starImportCount > maxAllowed) {
+            if (maxAllowed == 0) {
                 log(startingDot, MSG_KEY, importText);
+            }
+            else if (starImportCount > maxAllowed) {
+                log(startingDot, MSG_COUNT, Integer.valueOf(maxAllowed));
             }
         }
     }
